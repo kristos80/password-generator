@@ -107,12 +107,6 @@ This package uses [Pest](https://pestphp.com/) for testing.
 composer test
 ```
 
-You can also run PHPUnit directly:
-
-```bash
-vendor/bin/pest
-```
-
 ---
 
 ## 📖 License
