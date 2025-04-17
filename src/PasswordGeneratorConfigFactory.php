@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Kristos80\PasswordGenerator;
 
-final readonly class PasswordGeneratorFactory {
+final readonly class PasswordGeneratorConfigFactory {
 
 	/**
 	 * A balanced preset with a mix of types, 10 characters total.
