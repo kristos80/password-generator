@@ -1,6 +1,6 @@
 {
     "name": "kristos80/password-generator",
-    "description": "Secure, flexible password generator for PHP 8.1+",
+    "description": "Secure, flexible password generator for PHP 8.2+",
     "type": "library",
     "license": "MIT",
     "require": {
@@ -53,5 +53,5 @@
         "php",
         "utility"
     ],
-    "version": "0.0.1"
+    "version": "0.0.2"
 }
