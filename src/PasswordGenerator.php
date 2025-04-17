@@ -84,6 +84,8 @@ final readonly class PasswordGenerator {
 
 		shuffle($password);
 
+		$password = $this->avoidConsecutiveCharacters($password);
+
 		if($generatorConfig->getAlwaysStartWithCharacter() &&
 			($lowerCount > 0 || $upperCount > 0)) {
 			foreach($password as $index => $char) {
@@ -103,8 +105,6 @@ final readonly class PasswordGenerator {
 				}
 			}
 		}
-
-		$password = $this->avoidConsecutiveCharacters($password);
 
 		return implode("", $password);
 	}
