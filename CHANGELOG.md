@@ -4,6 +4,11 @@
 All notable changes to this project will be documented in this file.
 <!--- END HEADER -->
 
+## [0.1.3](https://github.com/kristos80/password-generator/compare/v0.1.2...v0.1.3) (2025-09-10)
+
+
+---
+
 ## [0.1.2](https://github.com/kristos80/password-generator/compare/v0.1.1...v0.1.2) (2025-09-10)
 
 
