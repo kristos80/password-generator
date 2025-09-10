@@ -47,7 +47,7 @@ final class PasswordGeneratorTest extends TestCase {
 		$generator = new PasswordGenerator();
 		$method = new ReflectionMethod(PasswordGenerator::class, "avoidConsecutiveCharacters");
 
-		return $method->invoke($generator, $input, 5);
+		return $method->invoke($generator, $input);
 	}
 
 	/**
@@ -81,7 +81,7 @@ final class PasswordGeneratorTest extends TestCase {
 				"a",
 				"a",
 			];
-		$output = $this->callAvoidConsecutiveCharacters($input, 2);
+		$output = $this->callAvoidConsecutiveCharacters($input);
 
 		$consecutiveExists = FALSE;
 		for($i = 1; $i < count($output); $i++) {
