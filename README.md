@@ -30,7 +30,7 @@ composer require kristos80/password-generator
 
 ```php
 use Kristos80\PasswordGenerator\PasswordGenerator;
-use Kristos80\PasswordGenerator\PasswordGeneratorFactory;
+use Kristos80\PasswordGenerator\PasswordGeneratorConfigFactory;
 
 $config = PasswordGeneratorConfigFactory::safeDefault();
 $password = (new PasswordGenerator())->generate($config);
