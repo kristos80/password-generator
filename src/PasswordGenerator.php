@@ -7,35 +7,7 @@ use Random\RandomException;
 
 final readonly class PasswordGenerator {
 
-	/**
-	 *
-	 */
-	private const CHARACTERS = "abcdefghijklmnopqrstuvwxyz";
-
-	/**
-	 *
-	 */
-	private const NUMBERS = "0123456789";
-
-	/**
-	 *
-	 */
-	private const SYMBOLS = "!@#$%^&*()-_=+[]{}|;:,.<>?";
-
-	/**
-	 *
-	 */
-	private const POOL_CHARACTERS = "characters";
-
-	/**
-	 *
-	 */
-	private const POOL_NUMBERS = "numbers";
-
-	/**
-	 *
-	 */
-	private const POOL_SYMBOLS = "symbols";
+	private const MAX_CONSECUTIVE_AVOIDANCE_ATTEMPTS = 5;
 
 	/**
 	 * @param PasswordGeneratorConfig $generatorConfig
@@ -46,81 +18,93 @@ final readonly class PasswordGenerator {
 	public function generate(PasswordGeneratorConfig $generatorConfig): string {
 		$password = [];
 
-		$lowerCount = random_int(
-			$generatorConfig->getLowercaseRange()->min,
-			$generatorConfig->getLowercaseRange()->max,
-		);
-
-		$upperCount = random_int(
-			$generatorConfig->getUppercaseRange()->min,
-			$generatorConfig->getUppercaseRange()->max,
-		);
-
-		$numberCount = random_int(
-			$generatorConfig->getNumbersRange()->min,
-			$generatorConfig->getNumbersRange()->max,
-		);
-
-		$symbolCount = random_int(
-			$generatorConfig->getSymbolsRange()->min,
-			$generatorConfig->getSymbolsRange()->max,
-		);
-
-		for($i = 0; $i < $lowerCount; $i++) {
-			$password[] = $this->pickRandom(self::POOL_CHARACTERS, $generatorConfig->getDoNotUse());
-		}
-
-		for($i = 0; $i < $upperCount; $i++) {
-			$password[] = strtoupper($this->pickRandom(self::POOL_CHARACTERS, $generatorConfig->getDoNotUse()));
-		}
-
-		for($i = 0; $i < $numberCount; $i++) {
-			$password[] = $this->pickRandom(self::POOL_NUMBERS, $generatorConfig->getDoNotUse());
-		}
-
-		for($i = 0; $i < $symbolCount; $i++) {
-			$password[] = $this->pickRandom(self::POOL_SYMBOLS, $generatorConfig->getDoNotUse());
-		}
+		$characterCounts = $this->calculateCharacterCounts($generatorConfig);
+		$this->populatePassword($password, $generatorConfig, $characterCounts);
 
 		shuffle($password);
-
 		$password = $this->avoidConsecutiveCharacters($password);
-
-		if($generatorConfig->getAlwaysStartWithCharacter() &&
-			($lowerCount > 0 || $upperCount > 0)) {
-			foreach($password as $index => $char) {
-				if(ctype_alpha($char)) {
-					if($index !== 0) {
-						[
-							$password[0],
-							$password[$index],
-						] =
-							[
-								$char,
-								$password[0],
-							];
-					}
-
-					break;
-				}
-			}
-		}
+		$this->ensureAlphabeticStart($password, $generatorConfig, $characterCounts);
 
 		return implode("", $password);
 	}
 
 	/**
-	 * @param string $poolMode
+	 * @param PasswordGeneratorConfig $config
+	 * @return array
+	 * @throws RandomException
+	 */
+	private function calculateCharacterCounts(PasswordGeneratorConfig $config): array {
+		return [
+			'lowercase' => random_int($config->lowercase->min, $config->lowercase->max),
+			'uppercase' => random_int($config->uppercase->min, $config->uppercase->max),
+			'numbers' => random_int($config->numbers->min, $config->numbers->max),
+			'symbols' => random_int($config->symbols->min, $config->symbols->max),
+		];
+	}
+
+	/**
+	 * @param array $password
+	 * @param PasswordGeneratorConfig $config
+	 * @param array $characterCounts
+	 * @return void
+	 * @throws EmptyPoolException
+	 * @throws RandomException
+	 */
+	private function populatePassword(array &$password, PasswordGeneratorConfig $config, array $characterCounts): void {
+		$this->addCharacters($password, PoolType::CHARACTERS, $characterCounts['lowercase'], $config->doNotUse);
+		$this->addCharacters($password, PoolType::CHARACTERS, $characterCounts['uppercase'], $config->doNotUse, true);
+		$this->addCharacters($password, PoolType::NUMBERS, $characterCounts['numbers'], $config->doNotUse);
+		$this->addCharacters($password, PoolType::SYMBOLS, $characterCounts['symbols'], $config->doNotUse);
+	}
+
+	/**
+	 * @param array $password
+	 * @param PasswordGeneratorConfig $config
+	 * @param array $characterCounts
+	 * @return void
+	 */
+	private function ensureAlphabeticStart(array &$password, PasswordGeneratorConfig $config, array $characterCounts): void {
+		if($config->alwaysStartWithCharacter && ($characterCounts['lowercase'] > 0 || $characterCounts['uppercase'] > 0)) {
+			foreach($password as $index => $char) {
+				if(ctype_alpha($char)) {
+					if($index !== 0) {
+						$this->swapArrayElements($password, 0, $index);
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	/**
+	 * @param array $password
+	 * @param PoolType $poolType
+	 * @param int $count
+	 * @param array $doNotUse
+	 * @param bool $uppercase
+	 * @return void
+	 * @throws EmptyPoolException
+	 * @throws RandomException
+	 */
+	private function addCharacters(array &$password, PoolType $poolType, int $count, array $doNotUse, bool $uppercase = false): void {
+		for($i = 0; $i < $count; $i++) {
+			$char = $this->pickRandom($poolType, $doNotUse);
+			$password[] = $uppercase ? strtoupper($char) : $char;
+		}
+	}
+
+	/**
+	 * @param PoolType $poolType
 	 * @param array $doNotUse
 	 * @return string
 	 * @throws EmptyPoolException
 	 * @throws RandomException
 	 */
-	private function pickRandom(string $poolMode, array $doNotUse): string {
-		$pool = match ($poolMode) {
-			self::POOL_NUMBERS => self::NUMBERS,
-			self::POOL_SYMBOLS => self::SYMBOLS,
-			default => self::CHARACTERS,
+	private function pickRandom(PoolType $poolType, array $doNotUse): string {
+		$pool = match ($poolType) {
+			PoolType::NUMBERS => CharacterPool::NUMBERS->getPool(),
+			PoolType::SYMBOLS => CharacterPool::SYMBOLS->getPool(),
+			default => CharacterPool::CHARACTERS->getPool(),
 		};
 
 		$pool = str_split($pool);
@@ -128,10 +112,20 @@ final readonly class PasswordGenerator {
 		$pool = array_values($pool);
 
 		if(!count($pool)) {
-			throw new EmptyPoolException("The pool '$poolMode' is empty");
+			throw new EmptyPoolException("The pool '{$poolType->value}' is empty");
 		}
 
 		return $pool[random_int(0, count($pool) - 1)];
+	}
+
+	/**
+	 * @param array $array
+	 * @param int $index1
+	 * @param int $index2
+	 * @return void
+	 */
+	private function swapArrayElements(array &$array, int $index1, int $index2): void {
+		[$array[$index1], $array[$index2]] = [$array[$index2], $array[$index1]];
 	}
 
 	/**
@@ -141,7 +135,7 @@ final readonly class PasswordGenerator {
 	private function avoidConsecutiveCharacters(array $password): array {
 		$attempts = 0;
 
-		while($attempts < 5) {
+		while($attempts < self::MAX_CONSECUTIVE_AVOIDANCE_ATTEMPTS) {
 			$hasConsecutive = FALSE;
 
 			for($i = 1; $i < count($password); $i++) {
@@ -154,14 +148,7 @@ final readonly class PasswordGenerator {
 							$password[$j] !== $password[$i] &&
 							$password[$j] !== $password[$i - 1]
 						) {
-							[
-								$password[$i],
-								$password[$j],
-							] =
-								[
-									$password[$j],
-									$password[$i],
-								];
+							$this->swapArrayElements($password, $i, $j);
 							break;
 						}
 					}
