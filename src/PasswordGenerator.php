@@ -18,14 +18,46 @@ final readonly class PasswordGenerator {
 	public function generate(PasswordGeneratorConfig $generatorConfig): string {
 		$password = [];
 
+		$filteredPools = $this->buildFilteredPools($generatorConfig->doNotUse);
 		$characterCounts = $this->calculateCharacterCounts($generatorConfig);
-		$this->populatePassword($password, $generatorConfig, $characterCounts);
+		$this->populatePassword($password, $filteredPools, $characterCounts);
 
 		shuffle($password);
 		$password = $this->avoidConsecutiveCharacters($password);
 		$this->ensureAlphabeticStart($password, $generatorConfig, $characterCounts);
 
 		return implode("", $password);
+	}
+
+	/**
+	 * @param array $doNotUse
+	 * @return array<string, array<int, string>>
+	 * @throws EmptyPoolException
+	 */
+	private function buildFilteredPools(array $doNotUse): array {
+		$doNotUseLower = array_map("strtolower", $doNotUse);
+
+		$pools = [];
+		foreach(PoolType::cases() as $poolType) {
+			$raw = match ($poolType) {
+				PoolType::NUMBERS => CharacterPool::NUMBERS->getPool(),
+				PoolType::SYMBOLS => CharacterPool::SYMBOLS->getPool(),
+				default => CharacterPool::CHARACTERS->getPool(),
+			};
+
+			$filtered = array_values(array_filter(
+				str_split($raw),
+				fn($char) => !in_array(strtolower($char), $doNotUseLower),
+			));
+
+			if(!count($filtered)) {
+				throw new EmptyPoolException("The pool '{$poolType->value}' is empty");
+			}
+
+			$pools[$poolType->value] = $filtered;
+		}
+
+		return $pools;
 	}
 
 	/**
@@ -44,17 +76,16 @@ final readonly class PasswordGenerator {
 
 	/**
 	 * @param array $password
-	 * @param PasswordGeneratorConfig $config
+	 * @param array<string, array<int, string>> $filteredPools
 	 * @param array $characterCounts
 	 * @return void
-	 * @throws EmptyPoolException
 	 * @throws RandomException
 	 */
-	private function populatePassword(array &$password, PasswordGeneratorConfig $config, array $characterCounts): void {
-		$this->addCharacters($password, PoolType::CHARACTERS, $characterCounts['lowercase'], $config->doNotUse);
-		$this->addCharacters($password, PoolType::CHARACTERS, $characterCounts['uppercase'], $config->doNotUse, true);
-		$this->addCharacters($password, PoolType::NUMBERS, $characterCounts['numbers'], $config->doNotUse);
-		$this->addCharacters($password, PoolType::SYMBOLS, $characterCounts['symbols'], $config->doNotUse);
+	private function populatePassword(array &$password, array $filteredPools, array $characterCounts): void {
+		$this->addCharacters($password, $filteredPools[PoolType::CHARACTERS->value], $characterCounts['lowercase']);
+		$this->addCharacters($password, $filteredPools[PoolType::CHARACTERS->value], $characterCounts['uppercase'], true);
+		$this->addCharacters($password, $filteredPools[PoolType::NUMBERS->value], $characterCounts['numbers']);
+		$this->addCharacters($password, $filteredPools[PoolType::SYMBOLS->value], $characterCounts['symbols']);
 	}
 
 	/**
@@ -78,44 +109,18 @@ final readonly class PasswordGenerator {
 
 	/**
 	 * @param array $password
-	 * @param PoolType $poolType
+	 * @param array<int, string> $pool
 	 * @param int $count
-	 * @param array $doNotUse
 	 * @param bool $uppercase
 	 * @return void
-	 * @throws EmptyPoolException
 	 * @throws RandomException
 	 */
-	private function addCharacters(array &$password, PoolType $poolType, int $count, array $doNotUse, bool $uppercase = false): void {
+	private function addCharacters(array &$password, array $pool, int $count, bool $uppercase = false): void {
+		$maxIndex = count($pool) - 1;
 		for($i = 0; $i < $count; $i++) {
-			$char = $this->pickRandom($poolType, $doNotUse);
+			$char = $pool[random_int(0, $maxIndex)];
 			$password[] = $uppercase ? strtoupper($char) : $char;
 		}
-	}
-
-	/**
-	 * @param PoolType $poolType
-	 * @param array $doNotUse
-	 * @return string
-	 * @throws EmptyPoolException
-	 * @throws RandomException
-	 */
-	private function pickRandom(PoolType $poolType, array $doNotUse): string {
-		$pool = match ($poolType) {
-			PoolType::NUMBERS => CharacterPool::NUMBERS->getPool(),
-			PoolType::SYMBOLS => CharacterPool::SYMBOLS->getPool(),
-			default => CharacterPool::CHARACTERS->getPool(),
-		};
-
-		$pool = str_split($pool);
-		$pool = array_filter($pool, fn($char) => !in_array(strtolower($char), array_map("strtolower", $doNotUse)));
-		$pool = array_values($pool);
-
-		if(!count($pool)) {
-			throw new EmptyPoolException("The pool '{$poolType->value}' is empty");
-		}
-
-		return $pool[random_int(0, count($pool) - 1)];
 	}
 
 	/**

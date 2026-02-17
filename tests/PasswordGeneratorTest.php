@@ -7,7 +7,6 @@ use ReflectionMethod;
 use ReflectionException;
 use Random\RandomException;
 use Kristos80\PasswordGenerator\PoolRange;
-use Kristos80\PasswordGenerator\PoolType;
 use Kristos80\PasswordGenerator\PasswordGenerator;
 use Kristos80\PasswordGenerator\EmptyPoolException;
 use Kristos80\PasswordGenerator\PasswordGeneratorConfig;
@@ -341,41 +340,50 @@ final class PasswordGeneratorTest extends TestCase {
 	 * @return void
 	 * @throws ReflectionException
 	 * @throws EmptyPoolException
-	 * @throws RandomException
 	 */
-	public function testPickRandom(): void {
+	public function testBuildFilteredPools(): void {
 		$generator = new PasswordGenerator();
-		$method = new ReflectionMethod(PasswordGenerator::class, "pickRandom");
+		$method = new ReflectionMethod(PasswordGenerator::class, "buildFilteredPools");
 		$method->setAccessible(true);
 
-		$char = $method->invoke($generator, PoolType::CHARACTERS, []);
-		$this->assertTrue(ctype_lower($char));
+		$pools = $method->invoke($generator, []);
 
-		$digit = $method->invoke($generator, PoolType::NUMBERS, []);
-		$this->assertTrue(ctype_digit($digit));
+		$this->assertArrayHasKey('characters', $pools);
+		$this->assertArrayHasKey('numbers', $pools);
+		$this->assertArrayHasKey('symbols', $pools);
 
-		$symbol = $method->invoke($generator, PoolType::SYMBOLS, []);
-		$this->assertNotFalse(strpbrk($symbol, "!@#$%^&*()-_=+[]{}|;:,.<>?"));
+		foreach($pools['characters'] as $char) {
+			$this->assertTrue(ctype_lower($char));
+		}
+
+		foreach($pools['numbers'] as $char) {
+			$this->assertTrue(ctype_digit($char));
+		}
+
+		foreach($pools['symbols'] as $char) {
+			$this->assertNotFalse(strpbrk($char, "!@#$%^&*()-_=+[]{}|;:,.<>?"));
+		}
 	}
 
 	/**
 	 * @return void
 	 * @throws ReflectionException
 	 * @throws EmptyPoolException
-	 * @throws RandomException
 	 */
-	public function testPickRandomWithExclusions(): void {
+	public function testBuildFilteredPoolsWithExclusions(): void {
 		$generator = new PasswordGenerator();
-		$method = new ReflectionMethod(PasswordGenerator::class, "pickRandom");
+		$method = new ReflectionMethod(PasswordGenerator::class, "buildFilteredPools");
 		$method->setAccessible(true);
 
-		$char = $method->invoke($generator, PoolType::CHARACTERS, ['a', 'b', 'c']);
-		$this->assertTrue(ctype_lower($char));
-		$this->assertNotContains($char, ['a', 'b', 'c']);
+		$pools = $method->invoke($generator, ['a', 'b', 'c', '0', '1']);
 
-		$digit = $method->invoke($generator, PoolType::NUMBERS, ['0', '1']);
-		$this->assertTrue(ctype_digit($digit));
-		$this->assertNotContains($digit, ['0', '1']);
+		foreach($pools['characters'] as $char) {
+			$this->assertNotContains($char, ['a', 'b', 'c']);
+		}
+
+		foreach($pools['numbers'] as $char) {
+			$this->assertNotContains($char, ['0', '1']);
+		}
 	}
 
 	/**
@@ -437,22 +445,19 @@ final class PasswordGeneratorTest extends TestCase {
 	 */
 	public function testPopulatePassword(): void {
 		$generator = new PasswordGenerator();
-		$method = new ReflectionMethod(PasswordGenerator::class, "populatePassword");
-		$method->setAccessible(true);
-		
+		$buildMethod = new ReflectionMethod(PasswordGenerator::class, "buildFilteredPools");
+		$buildMethod->setAccessible(true);
+		$populateMethod = new ReflectionMethod(PasswordGenerator::class, "populatePassword");
+		$populateMethod->setAccessible(true);
+
 		$password = [];
-		$config = new PasswordGeneratorConfig(
-			new PoolRange(2, 2),
-			new PoolRange(1, 1),
-			new PoolRange(1, 1),
-			new PoolRange(1, 1)
-		);
+		$filteredPools = $buildMethod->invoke($generator, []);
 		$counts = ['lowercase' => 2, 'uppercase' => 1, 'numbers' => 1, 'symbols' => 1];
 
-		$method->invokeArgs($generator, [&$password, $config, $counts]);
+		$populateMethod->invokeArgs($generator, [&$password, $filteredPools, $counts]);
 
 		$this->assertCount(5, $password);
-		
+
 		$typeCounts = ['lowercase' => 0, 'uppercase' => 0, 'numbers' => 0, 'symbols' => 0];
 		foreach($password as $char) {
 			if(ctype_lower($char)) {
@@ -504,15 +509,14 @@ final class PasswordGeneratorTest extends TestCase {
 	 * @return void
 	 * @throws ReflectionException
 	 * @throws EmptyPoolException
-	 * @throws RandomException
 	 */
 	public function testCaseInsensitiveExclusions(): void {
 		$generator = new PasswordGenerator();
-		$method = new ReflectionMethod(PasswordGenerator::class, "pickRandom");
+		$method = new ReflectionMethod(PasswordGenerator::class, "buildFilteredPools");
 		$method->setAccessible(true);
 
-		// Test case-insensitive exclusion (lowercase 'a' should exclude uppercase 'A')
-		$char = $method->invoke($generator, PoolType::CHARACTERS, ['A']);
-		$this->assertNotEquals('a', $char); // Should not pick 'a' since 'A' is excluded
+		// Test case-insensitive exclusion (uppercase 'A' should exclude lowercase 'a')
+		$pools = $method->invoke($generator, ['A']);
+		$this->assertNotContains('a', $pools['characters']);
 	}
 }
