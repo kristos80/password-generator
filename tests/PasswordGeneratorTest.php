@@ -178,8 +178,8 @@ final class PasswordGeneratorTest extends TestCase {
 		);
 
 		$this->expectException(EmptyPoolException::class);
-		$this->expectExceptionMessage("The pool 'characters' is empty");
-		
+		$this->expectExceptionMessage("The pool 'CHARACTERS' is empty");
+
 		$generator->generate($config);
 	}
 
@@ -190,7 +190,7 @@ final class PasswordGeneratorTest extends TestCase {
 	 */
 	public function testEmptyPoolExceptionForNumbers(): void {
 		$generator = new PasswordGenerator();
-		
+
 		$config = new PasswordGeneratorConfig(
 			new PoolRange(0, 0),
 			new PoolRange(0, 0),
@@ -201,8 +201,8 @@ final class PasswordGeneratorTest extends TestCase {
 		);
 
 		$this->expectException(EmptyPoolException::class);
-		$this->expectExceptionMessage("The pool 'numbers' is empty");
-		
+		$this->expectExceptionMessage("The pool 'NUMBERS' is empty");
+
 		$generator->generate($config);
 	}
 
@@ -213,7 +213,7 @@ final class PasswordGeneratorTest extends TestCase {
 	 */
 	public function testEmptyPoolExceptionForSymbols(): void {
 		$generator = new PasswordGenerator();
-		
+
 		$config = new PasswordGeneratorConfig(
 			new PoolRange(0, 0),
 			new PoolRange(0, 0),
@@ -224,7 +224,7 @@ final class PasswordGeneratorTest extends TestCase {
 		);
 
 		$this->expectException(EmptyPoolException::class);
-		$this->expectExceptionMessage("The pool 'symbols' is empty");
+		$this->expectExceptionMessage("The pool 'SYMBOLS' is empty");
 		
 		$generator->generate($config);
 	}
@@ -348,19 +348,19 @@ final class PasswordGeneratorTest extends TestCase {
 
 		$pools = $method->invoke($generator, []);
 
-		$this->assertArrayHasKey('characters', $pools);
-		$this->assertArrayHasKey('numbers', $pools);
-		$this->assertArrayHasKey('symbols', $pools);
+		$this->assertArrayHasKey('CHARACTERS', $pools);
+		$this->assertArrayHasKey('NUMBERS', $pools);
+		$this->assertArrayHasKey('SYMBOLS', $pools);
 
-		foreach($pools['characters'] as $char) {
+		foreach($pools['CHARACTERS'] as $char) {
 			$this->assertTrue(ctype_lower($char));
 		}
 
-		foreach($pools['numbers'] as $char) {
+		foreach($pools['NUMBERS'] as $char) {
 			$this->assertTrue(ctype_digit($char));
 		}
 
-		foreach($pools['symbols'] as $char) {
+		foreach($pools['SYMBOLS'] as $char) {
 			$this->assertNotFalse(strpbrk($char, "!@#$%^&*()-_=+[]{}|;:,.<>?"));
 		}
 	}
@@ -377,11 +377,11 @@ final class PasswordGeneratorTest extends TestCase {
 
 		$pools = $method->invoke($generator, ['a', 'b', 'c', '0', '1']);
 
-		foreach($pools['characters'] as $char) {
+		foreach($pools['CHARACTERS'] as $char) {
 			$this->assertNotContains($char, ['a', 'b', 'c']);
 		}
 
-		foreach($pools['numbers'] as $char) {
+		foreach($pools['NUMBERS'] as $char) {
 			$this->assertNotContains($char, ['0', '1']);
 		}
 	}
@@ -517,6 +517,6 @@ final class PasswordGeneratorTest extends TestCase {
 
 		// Test case-insensitive exclusion (uppercase 'A' should exclude lowercase 'a')
 		$pools = $method->invoke($generator, ['A']);
-		$this->assertNotContains('a', $pools['characters']);
+		$this->assertNotContains('a', $pools['CHARACTERS']);
 	}
 }
