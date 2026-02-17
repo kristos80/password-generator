@@ -38,23 +38,17 @@ final readonly class PasswordGenerator {
 		$doNotUseLower = array_map("strtolower", $doNotUse);
 
 		$pools = [];
-		foreach(PoolType::cases() as $poolType) {
-			$raw = match ($poolType) {
-				PoolType::NUMBERS => CharacterPool::NUMBERS->getPool(),
-				PoolType::SYMBOLS => CharacterPool::SYMBOLS->getPool(),
-				default => CharacterPool::CHARACTERS->getPool(),
-			};
-
+		foreach(CharacterPool::cases() as $characterPool) {
 			$filtered = array_values(array_filter(
-				str_split($raw),
+				str_split($characterPool->getPool()),
 				fn($char) => !in_array(strtolower($char), $doNotUseLower),
 			));
 
 			if(!count($filtered)) {
-				throw new EmptyPoolException("The pool '{$poolType->value}' is empty");
+				throw new EmptyPoolException("The pool '{$characterPool->name}' is empty");
 			}
 
-			$pools[$poolType->value] = $filtered;
+			$pools[$characterPool->name] = $filtered;
 		}
 
 		return $pools;
@@ -82,10 +76,10 @@ final readonly class PasswordGenerator {
 	 * @throws RandomException
 	 */
 	private function populatePassword(array &$password, array $filteredPools, array $characterCounts): void {
-		$this->addCharacters($password, $filteredPools[PoolType::CHARACTERS->value], $characterCounts['lowercase']);
-		$this->addCharacters($password, $filteredPools[PoolType::CHARACTERS->value], $characterCounts['uppercase'], true);
-		$this->addCharacters($password, $filteredPools[PoolType::NUMBERS->value], $characterCounts['numbers']);
-		$this->addCharacters($password, $filteredPools[PoolType::SYMBOLS->value], $characterCounts['symbols']);
+		$this->addCharacters($password, $filteredPools[CharacterPool::CHARACTERS->name], $characterCounts['lowercase']);
+		$this->addCharacters($password, $filteredPools[CharacterPool::CHARACTERS->name], $characterCounts['uppercase'], true);
+		$this->addCharacters($password, $filteredPools[CharacterPool::NUMBERS->name], $characterCounts['numbers']);
+		$this->addCharacters($password, $filteredPools[CharacterPool::SYMBOLS->name], $characterCounts['symbols']);
 	}
 
 	/**
