@@ -1,57 +1,57 @@
 {
-    "name": "kristos80/password-generator",
-    "description": "Secure, flexible password generator for PHP 8.2+",
-    "type": "library",
-    "license": "MIT",
-    "require": {
-        "php": "^8.2"
-    },
-    "require-dev": {
-        "marcocesarato/php-conventional-changelog": "^1.17",
-        "pestphp/pest": "v3.8"
-    },
-    "autoload": {
-        "psr-4": {
-            "Kristos80\\PasswordGenerator\\": "src"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Kristos80\\PasswordGenerator\\Tests\\": "tests"
-        }
-    },
-    "scripts": {
-        "test": "pest",
-        "git-add": "git add .;",
-        "release:patch": [
-            "@git-add",
-            "vendor/bin/conventional-changelog --patch --commit; git push;"
-        ],
-        "release:minor": [
-            "@git-add",
-            "vendor/bin/conventional-changelog --minor --commit; git push;"
-        ],
-        "release:major": [
-            "@git-add",
-            "vendor/bin/conventional-changelog --major --commit; git push;"
-        ],
-        "release:rc": [
-            "@git-add",
-            "vendor/bin/conventional-changelog --rc --commit; git push;"
-        ]
-    },
-    "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
-    },
-    "keywords": [
-        "password",
-        "generator",
-        "secure",
-        "php",
-        "utility"
+  "name": "kristos80/password-generator",
+  "description": "Secure, flexible password generator for PHP 8.2+",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": "^8.2"
+  },
+  "require-dev": {
+    "marcocesarato/php-conventional-changelog": "^1.17",
+    "pestphp/pest": "v4.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "Kristos80\\PasswordGenerator\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Kristos80\\PasswordGenerator\\Tests\\": "tests"
+    }
+  },
+  "scripts": {
+    "test": "pest",
+    "git-add": "git add .;",
+    "release:patch": [
+      "@git-add",
+      "vendor/bin/conventional-changelog --patch --commit; git push;"
     ],
-    "version": "0.1.5"
+    "release:minor": [
+      "@git-add",
+      "vendor/bin/conventional-changelog --minor --commit; git push;"
+    ],
+    "release:major": [
+      "@git-add",
+      "vendor/bin/conventional-changelog --major --commit; git push;"
+    ],
+    "release:rc": [
+      "@git-add",
+      "vendor/bin/conventional-changelog --rc --commit; git push;"
+    ]
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  },
+  "keywords": [
+    "password",
+    "generator",
+    "secure",
+    "php",
+    "utility"
+  ],
+  "version": "0.1.5"
 }
